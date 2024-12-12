@@ -21,8 +21,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 
-
-
 class StudentRegView(APIView):
     """
     API view to register student.
@@ -40,7 +38,6 @@ class StudentRegView(APIView):
 
                 serializer_one = CustomUserSerializer(data=custom_user_data)
                 serializer_one.is_valid(raise_exception=True)
-                
 
                 student_data = {
                     "student_name": request.data.get("student_name"),
@@ -78,7 +75,7 @@ class StudentRegView(APIView):
 
         except Exception as e:
             return Response(
-                {"message":"somthing went wrong,{e}"},
+                {"message": "somthing went wrong,{e}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -149,7 +146,7 @@ class CollegeRegView(APIView):
                     "location": request.data.get("location"),
                 }
                 serializer_two = CollegeRegSerializer(data=college_data)
-                serializer_one.is_valid(raise_exception=True)
+                serializer_two.is_valid(raise_exception=True)
 
                 user = serializer_one.save()
 
@@ -190,10 +187,12 @@ class AdminRegView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+
 class RefreshTokenView(APIView):
     """
     API view to refresh the access token using a valid refresh token.
     """
+
     def post(self, request):
         refresh_token = request.data.get("refresh_token")
 
@@ -206,14 +205,16 @@ class RefreshTokenView(APIView):
         try:
             # Create the RefreshToken instance using the provided refresh token
             refresh = RefreshToken(refresh_token)
-            
+
             # Create the new access token
             access_token = str(refresh.access_token)
 
             return Response(
                 {
                     "accessToken": access_token,
-                    "refreshToken": str(refresh)  # Optionally return the same refresh token
+                    "refreshToken": str(
+                        refresh
+                    ),  # Optionally return the same refresh token
                 },
                 status=status.HTTP_200_OK,
             )
@@ -229,6 +230,7 @@ class RefreshTokenView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+
 class LoginView(APIView):
 
     @swagger_auto_schema(request_body=LoginSerializer)
@@ -239,16 +241,15 @@ class LoginView(APIView):
         try:
             if serializer.is_valid():
                 user = serializer.validated_data["user"]
-                
+
                 refresh = RefreshToken.for_user(user)
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh)
 
-                
-                return Response({
-                    "accessToken":access_token,
-                    "refreshToken":refresh_token},
-                    status=status.HTTP_200_OK)
+                return Response(
+                    {"accessToken": access_token, "refreshToken": refresh_token},
+                    status=status.HTTP_200_OK,
+                )
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
@@ -622,7 +623,7 @@ class StudentListView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except:
             return Response(
-                {"message": "not result found"}, status=status.HTTP_404_NOT_FOUND
+                {"message": "no result found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -652,3 +653,18 @@ class AppliedCollegeView(APIView):
         serializer = CollegeDetailsSerializer(colleges, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RecentlyAddedColleges(APIView):
+    def get(self, request):
+        try:
+            recent_colleges = College.objects.order_by("-created_at").filter(
+                is_approved=True
+            )[:10]
+            serializer = CollegeDetailsSerializer(recent_colleges, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response(
+                {"message": "no result found"}, status=status.HTTP_404_NOT_FOUND
+            )

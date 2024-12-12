@@ -27,4 +27,5 @@ urlpatterns = [
     path("students_details/<int:student_id>", StudentDetailsView.as_view()),
     path("students_list/", StudentListView.as_view()),
     path("applied_colleges/<int:student_id>", AppliedCollegeView.as_view()),
+    path("recent_colleges/", RecentlyAddedColleges.as_view()),
 ]
