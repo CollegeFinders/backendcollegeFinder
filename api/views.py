@@ -688,7 +688,7 @@ class UserDetails(APIView):
                     "role":"college"
                 }
 
-            elif not user.is_college and not user.is_student:
+            elif not user.is_college and not user.is_student and user.is_admin:
                 user_data = {"role":"admin"}
 
         except Student.DoesNotExist:
