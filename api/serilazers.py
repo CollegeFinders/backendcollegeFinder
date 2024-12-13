@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import *
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+import jwt
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -23,13 +24,13 @@ class StudentDetailsSerializer(serializers.ModelSerializer):
 
 
 class CollegeRegSerializer(serializers.ModelSerializer):
-    courses = serializers.PrimaryKeyRelatedField(
+    college_courses = serializers.PrimaryKeyRelatedField(
         queryset=Course.objects.all(), many=True
     )
 
     class Meta:
         model = College
-        fields = ["college_name", "location", "courses"]
+        fields = ["image_url","college_name", "college_pincode", "college_courses","college_details"]
 
 
 class AdminRegSerializer(serializers.Serializer):
@@ -40,13 +41,13 @@ class AdminRegSerializer(serializers.Serializer):
 class LocationRegSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = ["location_name"]
+        exclude = ['id','created_at', 'updated_at']
 
 
 class LocationDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        fields = ["id", "location_name"]
+        exclude = ['id','created_at', 'updated_at']
 
 
 class CourseRegSerializer(serializers.ModelSerializer):
@@ -177,4 +178,5 @@ class AppliedStudentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppliedStudents
         fields = "__all__"
+
 

@@ -8,8 +8,8 @@ from datetime import timedelta
 from django.core.mail import send_mail, BadHeaderError
 from django.conf import settings
 from django.utils import timezone
-from .permissions import IsAuthenticatedWithJWT
-from rest_framework.permissions import IsAdminUser
+from .permissions import IsAdminUser, IsStudentUser, IsCollegeUser
+from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
@@ -22,9 +22,6 @@ from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 
 class StudentRegView(APIView):
-    """
-    API view to register student.
-    """
 
     @swagger_auto_schema(request_body=CustomUserAndStudentSerializer)
     def post(self, request):
@@ -141,9 +138,12 @@ class CollegeRegView(APIView):
                 serializer_one.is_valid(raise_exception=True)
 
                 college_data = {
+                    "image_url": request.data.get("image_url"),
                     "college_name": request.data.get("college_name"),
-                    "courses": request.data.get("courses"),
-                    "location": request.data.get("location"),
+                    "college_pincode": request.data.get("college_pincode"),
+                    "college_details": request.data.get("college_details"),
+                    "college_courses": request.data.get("college_courses"),
+    
                 }
                 serializer_two = CollegeRegSerializer(data=college_data)
                 serializer_two.is_valid(raise_exception=True)
@@ -188,47 +188,46 @@ class AdminRegView(APIView):
             )
 
 
-class RefreshTokenView(APIView):
-    """
-    API view to refresh the access token using a valid refresh token.
-    """
+# class RefreshTokenView(APIView):
+#     """
+#     API view to refresh the access token using a valid refresh token.
+#     """
 
-    def post(self, request):
-        refresh_token = request.data.get("refresh_token")
+#     def post(self, request):
+#         refresh_token = request.data.get("refreshToken")
 
-        if not refresh_token:
-            return Response(
-                {"message": "Refresh token is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+#         if not refresh_token:
+#             return Response(
+#                 {"message": "Refresh token is required."},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
 
-        try:
-            # Create the RefreshToken instance using the provided refresh token
-            refresh = RefreshToken(refresh_token)
+#         try:
+#             refresh = RefreshToken(refresh_token)
 
-            # Create the new access token
-            access_token = str(refresh.access_token)
+#             # Create the new access token
+#             access_token = str(refresh.access_token)
 
-            return Response(
-                {
-                    "accessToken": access_token,
-                    "refreshToken": str(
-                        refresh
-                    ),  # Optionally return the same refresh token
-                },
-                status=status.HTTP_200_OK,
-            )
+#             return Response(
+#                 {
+#                     "accessToken": access_token,
+#                     "refreshToken": str(
+#                         refresh
+#                     ),  # Optionally return the same refresh token
+#                 },
+#                 status=status.HTTP_200_OK,
+#             )
 
-        except TokenError as e:
-            return Response(
-                {"message": f"Invalid refresh token: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except Exception as e:
-            return Response(
-                {"message": f"An error occurred: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+#         except TokenError as e:
+#             return Response(
+#                 {"message": f"Invalid refresh token: {str(e)}"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+#         except Exception as e:
+#             return Response(
+#                 {"message": f"An error occurred: {str(e)}"},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             )
 
 
 class LoginView(APIView):
@@ -247,7 +246,7 @@ class LoginView(APIView):
                 refresh_token = str(refresh)
 
                 return Response(
-                    {"accessToken": access_token, "refreshToken": refresh_token},
+                    {"access": access_token, "refresh": refresh_token},
                     status=status.HTTP_200_OK,
                 )
 
@@ -308,9 +307,9 @@ class CourseRegView(APIView):
 
 
 class AdminCollegeApprovalView(APIView):
-    def get(self, request):
-        permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser]
 
+    def get(self, request):       
         try:
             colleges = College.objects.filter(
                 is_approved=False, approval_request_sent=True
@@ -333,9 +332,8 @@ class AdminCollegeApprovalView(APIView):
             },
         )
     )
-    def post(self, request):
-        permission_classes = [IsAdminUser]
 
+    def post(self, request):
         college_id = request.data.get("college_id")
         action = request.data.get("action")
 
@@ -376,8 +374,6 @@ class AdminCollegeApprovalView(APIView):
 
 class CollegeListView(APIView):
     def get(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
-
         try:
             colleges = College.objects.all()
             serializer = CollegeDetailsSerializer(colleges, many=True)
@@ -390,7 +386,6 @@ class CollegeListView(APIView):
 
 class LocationListView(APIView):
     def get(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
 
         try:
             location = Location.objects.all()
@@ -406,8 +401,6 @@ class LocationListView(APIView):
 
 class CourseListView(APIView):
     def get(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
-
         try:
             courses = Course.objects.all()
             serializer = CourseDetailsSerializer(courses, many=True)
@@ -443,10 +436,10 @@ class LocationBasedCollegeListView(APIView):
 
 
 class StudentProfileUpdateView(APIView):
+    permission_classes = [IsStudentUser]
 
     @swagger_auto_schema(request_body=StudentProfileSerializer)
     def put(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
 
         data = request.data
         user = request.data.get("user")
@@ -474,10 +467,10 @@ class StudentProfileUpdateView(APIView):
 
 
 class CollegeProfileUpdateView(APIView):
+    permission_classes = [IsCollegeUser]
 
     @swagger_auto_schema(request_body=CollegeProfileSerializer)
     def put(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
 
         data = request.data
         user = request.data.get("user")
@@ -505,7 +498,6 @@ class CollegeProfileUpdateView(APIView):
 
 class CollegeDetailsView(APIView):
     def get(self, request, college_id):
-        permission_classes = [IsAuthenticatedWithJWT]
 
         try:
             college = College.objects.get(id=college_id)
@@ -528,8 +520,6 @@ class SearchView(APIView):
         ]
     )
     def get(self, request):
-        permission_classes = [IsAuthenticatedWithJWT]
-
         query = request.query_params.get("query", None)
 
         if not query:
@@ -614,9 +604,9 @@ class AppliedStudentsView(APIView):
 
 
 class StudentListView(APIView):
-    def get(self, request):
-        permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser]
 
+    def get(self, request):
         try:
             students = Student.objects.all()
             serializer = StudentDetailsSerializer(students, many=True)
@@ -628,9 +618,9 @@ class StudentListView(APIView):
 
 
 class StudentDetailsView(APIView):
-    def get(self, request, student_id):
-        permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminUser]
 
+    def get(self, request, student_id):
         try:
             student = Student.objects.get(id=student_id)
             serializer = StudentDetailsSerializer(student)
@@ -645,6 +635,8 @@ class StudentDetailsView(APIView):
 
 
 class AppliedCollegeView(APIView):
+    permission_classes = [IsStudentUser]
+
     def get(self, request, student_id):
         applied_colleges = AppliedStudents.objects.filter(
             student_id=student_id
@@ -668,3 +660,39 @@ class RecentlyAddedColleges(APIView):
             return Response(
                 {"message": "no result found"}, status=status.HTTP_404_NOT_FOUND
             )
+
+
+class UserDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        user = request.user
+        
+        try:
+            if user.is_student:
+                # student = Student.objects.get(user=user)
+                user_data = {
+                    # "name": student.student_name,
+                    # "gender": student.gender,
+                    # "location": student.student_pincode.region,
+                    "role":"student"
+                }
+
+            elif user.is_college:
+                # college = College.objects.get(user=user)
+                # courses = CourseDetailsSerializer(college.college_courses.all(), many=True).data
+                user_data = {
+                    # "college_name": college.college_name,
+                    # "courses": courses,
+                    # "location": college.college_pincode.region,
+                    "role":"college"
+                }
+
+            elif not user.is_college and not user.is_student:
+                user_data = {"role":"admin"}
+
+        except Student.DoesNotExist:
+            user_data = None
+
+        return Response(user_data, status=status.HTTP_200_OK)
+    
