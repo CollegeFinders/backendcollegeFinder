@@ -188,46 +188,46 @@ class AdminRegView(APIView):
             )
 
 
-# class RefreshTokenView(APIView):
-#     """
-#     API view to refresh the access token using a valid refresh token.
-#     """
+class RefreshTokenView(APIView):
+    """
+    API view to refresh the access token using a valid refresh token.
+    """
 
-#     def post(self, request):
-#         refresh_token = request.data.get("refreshToken")
+    def post(self, request):
+        refresh_token = request.data.get("refreshToken")
 
-#         if not refresh_token:
-#             return Response(
-#                 {"message": "Refresh token is required."},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
+        if not refresh_token:
+            return Response(
+                {"message": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-#         try:
-#             refresh = RefreshToken(refresh_token)
+        try:
+            refresh = RefreshToken(refresh_token)
 
-#             # Create the new access token
-#             access_token = str(refresh.access_token)
+            # Create the new access token
+            access_token = str(refresh.access_token)
 
-#             return Response(
-#                 {
-#                     "accessToken": access_token,
-#                     "refreshToken": str(
-#                         refresh
-#                     ),  # Optionally return the same refresh token
-#                 },
-#                 status=status.HTTP_200_OK,
-#             )
+            return Response(
+                {
+                    "accessToken": access_token,
+                    "refreshToken": str(
+                        refresh
+                    ),  # Optionally return the same refresh token
+                },
+                status=status.HTTP_200_OK,
+            )
 
-#         except TokenError as e:
-#             return Response(
-#                 {"message": f"Invalid refresh token: {str(e)}"},
-#                 status=status.HTTP_400_BAD_REQUEST,
-#             )
-#         except Exception as e:
-#             return Response(
-#                 {"message": f"An error occurred: {str(e)}"},
-#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             )
+        except TokenError as e:
+            return Response(
+                {"message": f"Invalid refresh token: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception as e:
+            return Response(
+                {"message": f"An error occurred: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class LoginView(APIView):
@@ -246,7 +246,7 @@ class LoginView(APIView):
                 refresh_token = str(refresh)
 
                 return Response(
-                    {"access": access_token, "refresh": refresh_token},
+                    {"accessToken": access_token, "refreshToken": refresh_token},
                     status=status.HTTP_200_OK,
                 )
 
