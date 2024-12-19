@@ -3,6 +3,7 @@ from .models import *
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 import jwt
+from django.contrib.auth.hashers import check_password
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -30,7 +31,13 @@ class CollegeRegSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = College
-        fields = ["image_url","college_name", "college_pincode", "college_courses","college_details"]
+        fields = [
+            "image_url",
+            "college_name",
+            "college_pincode",
+            "college_courses",
+            "college_details",
+        ]
 
 
 class AdminRegSerializer(serializers.Serializer):
@@ -41,13 +48,13 @@ class AdminRegSerializer(serializers.Serializer):
 class LocationRegSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        exclude = ['id','created_at', 'updated_at']
+        exclude = ["id", "created_at", "updated_at"]
 
 
 class LocationDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
-        exclude = ['id','created_at', 'updated_at']
+        exclude = ["id", "created_at", "updated_at"]
 
 
 class CourseRegSerializer(serializers.ModelSerializer):
@@ -75,11 +82,10 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid credentials.")
         if not user.is_active:
             raise serializers.ValidationError("User account is disabled.")
-        
-        data["user"]=user
+
+        data["user"] = user
         return data
-        
-        
+
         """try:
 
             if user.is_student:
@@ -178,5 +184,3 @@ class AppliedStudentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppliedStudents
         fields = "__all__"
-
-

@@ -9,7 +9,7 @@ from django.core.mail import send_mail, BadHeaderError
 from django.conf import settings
 from django.utils import timezone
 from .permissions import IsAdminUser, IsStudentUser, IsCollegeUser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
@@ -60,7 +60,7 @@ class StudentRegView(APIView):
                     send_otp.delay(otp, student.user.email)
 
                     return Response(
-                        {"message": "OTP sent to the registered email."},
+                        {"detail": "OTP sent to the registered email."},
                         status=status.HTTP_201_CREATED,
                     )
 
@@ -72,7 +72,7 @@ class StudentRegView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": "somthing went wrong,{e}"},
+                {"detail": "somthing went wrong,{e}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -92,7 +92,7 @@ class VerifyOtpView(APIView):
                 user = CustomUser.objects.get(email=email)
             except CustomUser.DoesNotExist:
                 return Response(
-                    {"message": "User with this email does not exist."},
+                    {"detail": "User with this email does not exist."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -112,12 +112,12 @@ class VerifyOtpView(APIView):
                 user.save()
                 student.save()
                 return Response(
-                    {"message": "Account verified successfully."},
+                    {"detail": "Account verified successfully."},
                     status=status.HTTP_200_OK,
                 )
 
             return Response(
-                {"message": "Invalid or expired OTP"},
+                {"detail": "Invalid or expired OTP"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -156,14 +156,14 @@ class CollegeRegView(APIView):
 
                 return Response(
                     {
-                        "message": "College registered successfully. Wait for approval from admin"
+                        "detail": "College registered successfully. Wait for approval from admin"
                     },
                     status=status.HTTP_201_CREATED,
                 )
 
         except Exception as e:
             return Response(
-                {"message": f"somthing went wrong,{e}"},
+                {"detail": f"somthing went wrong,{e}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -176,14 +176,14 @@ class AdminRegView(APIView):
             if serializer.is_valid():
                 CustomUser.objects.create_superuser(**serializer.validated_data)
                 return Response(
-                    {"message": "Admin registered successfully."},
+                    {"detail": "Admin registered successfully."},
                     status=status.HTTP_201_CREATED,
                 )
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -198,7 +198,7 @@ class RefreshTokenView(APIView):
 
         if not refresh_token:
             return Response(
-                {"message": "Refresh token is required."},
+                {"detail": "Refresh token is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -220,17 +220,18 @@ class RefreshTokenView(APIView):
 
         except TokenError as e:
             return Response(
-                {"message": f"Invalid refresh token: {str(e)}"},
+                {"detail": f"Invalid refresh token: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
 class LoginView(APIView):
+    permission_classes = [AllowAny]
 
     @swagger_auto_schema(request_body=LoginSerializer)
     def post(self, request):
@@ -253,7 +254,7 @@ class LoginView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -272,13 +273,13 @@ class LocationRegView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(
-                    {"message": "Location registered successfully"},
+                    {"detail": "Location registered successfully"},
                     status=status.HTTP_201_CREATED,
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -295,13 +296,13 @@ class CourseRegView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(
-                    {"message": "Course registered successfully"},
+                    {"detail": "Course registered successfully"},
                     status=status.HTTP_201_CREATED,
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -319,7 +320,7 @@ class AdminCollegeApprovalView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -339,7 +340,7 @@ class AdminCollegeApprovalView(APIView):
 
         if not college_id or action not in ["approve", "reject"]:
             return Response(
-                {"message": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -354,7 +355,7 @@ class AdminCollegeApprovalView(APIView):
                 college.save()
                 user.save()
                 return Response(
-                    {"message": "College approved successfully."},
+                    {"detail": "College approved successfully."},
                     status=status.HTTP_200_OK,
                 )
 
@@ -362,13 +363,13 @@ class AdminCollegeApprovalView(APIView):
                 college.approval_request_sent = False
                 college.save()
                 return Response(
-                    {"message": "College registration rejected."},
+                    {"detail": "College registration rejected."},
                     status=status.HTTP_200_OK,
                 )
 
         except College.DoesNotExist:
             return Response(
-                {"message": "College not found."}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "College not found."}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -380,7 +381,7 @@ class CollegeListView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except:
             return Response(
-                {"message": "not result found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "not result found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -394,7 +395,7 @@ class LocationListView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -408,7 +409,7 @@ class CourseListView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -421,7 +422,7 @@ class LocationBasedCollegeListView(APIView):
 
             if not college.exists():
                 return Response(
-                    {"message": "No Colleges found in the location"},
+                    {"detail": "No Colleges found in the location"},
                     status=status.HTTP_404_NOT_FOUND,
                 )
 
@@ -430,7 +431,7 @@ class LocationBasedCollegeListView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -451,7 +452,7 @@ class StudentProfileUpdateView(APIView):
                 serializer.save()
                 return Response(
                     {
-                        "message": "Student updated successfully",
+                        "detail": "Student updated successfully",
                         "profile": serializer.data,
                     },
                     status=status.HTTP_200_OK,
@@ -461,7 +462,7 @@ class StudentProfileUpdateView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -482,7 +483,7 @@ class CollegeProfileUpdateView(APIView):
                 serializer.save()
                 return Response(
                     {
-                        "message": "College updated successfully",
+                        "detail": "College updated successfully",
                         "profile": serializer.data,
                     },
                     status=status.HTTP_200_OK,
@@ -491,7 +492,7 @@ class CollegeProfileUpdateView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -507,7 +508,7 @@ class CollegeDetailsView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -524,7 +525,7 @@ class SearchView(APIView):
 
         if not query:
             return Response(
-                {"message": "Query parameter is required."},
+                {"detail": "Query parameter is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -560,13 +561,13 @@ class SearchView(APIView):
 
         except ObjectDoesNotExist as e:
             return Response(
-                {"message": "not found.", "details": str(e)},
+                {"detail": "not found.", "details": str(e)},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         except Exception as e:
             return Response(
-                {"message": "An unexpected error occurred.", "details": str(e)},
+                {"detail": "An unexpected error occurred.", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -589,7 +590,7 @@ class ApplyToCollegeView(APIView):
             print("Serializer one errors:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({"message": "Applied Successfully"}, status=status.HTTP_200_OK)
+        return Response({"detail": "Applied Successfully"}, status=status.HTTP_200_OK)
 
 
 class AppliedStudentsView(APIView):
@@ -613,7 +614,7 @@ class StudentListView(APIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except:
             return Response(
-                {"message": "no result found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "no result found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -629,7 +630,7 @@ class StudentDetailsView(APIView):
 
         except Exception as e:
             return Response(
-                {"message": f"An error occurred: {str(e)}"},
+                {"detail": f"An error occurred: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -658,7 +659,7 @@ class RecentlyAddedColleges(APIView):
 
         except Exception as e:
             return Response(
-                {"message": "no result found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": "no result found"}, status=status.HTTP_404_NOT_FOUND
             )
 
 
