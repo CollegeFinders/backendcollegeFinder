@@ -246,8 +246,17 @@ class LoginView(APIView):
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh)
 
+                if user.is_student:
+                    role = "student"
+
+                elif user.is_college:
+                    role = "college"
+
+                elif not user.is_college and not user.is_student and user.is_admin:
+                    role = "admin"
+
                 return Response(
-                    {"accessToken": access_token, "refreshToken": refresh_token},
+                    {"accessToken": access_token, "refreshToken": refresh_token, "role": role},
                     status=status.HTTP_200_OK,
                 )
 
@@ -663,7 +672,7 @@ class RecentlyAddedColleges(APIView):
             )
 
 
-class UserDetails(APIView):
+"""class UserDetails(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self,request):
@@ -695,5 +704,5 @@ class UserDetails(APIView):
         except Student.DoesNotExist:
             user_data = None
 
-        return Response(user_data, status=status.HTTP_200_OK)
+        return Response(user_data, status=status.HTTP_200_OK)"""
     
