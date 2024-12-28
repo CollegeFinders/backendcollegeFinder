@@ -15,7 +15,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class StudentRegSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ["student_name", "gender", "location"]
+        fields = ["student_name", "gender", "student_pincode"]
 
 
 class StudentDetailsSerializer(serializers.ModelSerializer):

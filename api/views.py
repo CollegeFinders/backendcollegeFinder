@@ -15,10 +15,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .tasks import send_otp
+
+# from .tasks import send_otp
 from django.db import transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+import threading
 
 
 class StudentRegView(APIView):
@@ -39,7 +41,7 @@ class StudentRegView(APIView):
                 student_data = {
                     "student_name": request.data.get("student_name"),
                     "gender": request.data.get("gender"),
-                    "location": request.data.get("location"),
+                    "student_pincode": request.data.get("student_pincode"),
                 }
 
                 serializer_two = StudentRegSerializer(data=student_data)
@@ -57,7 +59,21 @@ class StudentRegView(APIView):
                 student.save()
 
                 try:
-                    send_otp.delay(otp, student.user.email)
+                    # send_otp.delay(otp, student.user.email)
+
+                    def send_otp(otp, student_email):
+                        send_mail(
+                            "Your OTP Code",
+                            f"Your OTP code is {otp}",
+                            settings.EMAIL_HOST_USER,
+                            [student_email],
+                            fail_silently=False,
+                        )
+
+                    thread = threading.Thread(
+                        target=send_otp, args=(otp, student.user.email)
+                    )
+                    thread.start()
 
                     return Response(
                         {"detail": "OTP sent to the registered email."},
@@ -72,7 +88,7 @@ class StudentRegView(APIView):
 
         except Exception as e:
             return Response(
-                {"detail": "somthing went wrong,{e}"},
+                {"detail": f"somthing went wrong,{str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -143,7 +159,6 @@ class CollegeRegView(APIView):
                     "college_pincode": request.data.get("college_pincode"),
                     "college_details": request.data.get("college_details"),
                     "college_courses": request.data.get("college_courses"),
-    
                 }
                 serializer_two = CollegeRegSerializer(data=college_data)
                 serializer_two.is_valid(raise_exception=True)
@@ -256,7 +271,11 @@ class LoginView(APIView):
                     role = "admin"
 
                 return Response(
-                    {"accessToken": access_token, "refreshToken": refresh_token, "role": role},
+                    {
+                        "accessToken": access_token,
+                        "refreshToken": refresh_token,
+                        "role": role,
+                    },
                     status=status.HTTP_200_OK,
                 )
 
@@ -319,7 +338,7 @@ class CourseRegView(APIView):
 class AdminCollegeApprovalView(APIView):
     permission_classes = [IsAdminUser]
 
-    def get(self, request):       
+    def get(self, request):
         try:
             colleges = College.objects.filter(
                 is_approved=False, approval_request_sent=True
@@ -342,7 +361,6 @@ class AdminCollegeApprovalView(APIView):
             },
         )
     )
-
     def post(self, request):
         college_id = request.data.get("college_id")
         action = request.data.get("action")
@@ -705,4 +723,3 @@ class RecentlyAddedColleges(APIView):
             user_data = None
 
         return Response(user_data, status=status.HTTP_200_OK)"""
-    
