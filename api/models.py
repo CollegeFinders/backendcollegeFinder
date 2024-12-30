@@ -2,6 +2,7 @@ from django.db import models
 from .manager import UserManager
 from django.contrib.auth.models import AbstractBaseUser
 from django.contrib.auth.hashers import make_password
+from cloudinary.models import CloudinaryField
 
 
 class Location(models.Model):
@@ -55,7 +56,9 @@ class Student(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
     student_name = models.CharField(max_length=100)
     gender = models.CharField(max_length=20)
-    student_pincode = models.ForeignKey(Location,to_field='pincode', on_delete=models.CASCADE)
+    student_pincode = models.ForeignKey(
+        Location, to_field="pincode", on_delete=models.CASCADE
+    )
     otp = models.CharField(max_length=6, null=True)
     otp_expiry = models.DateTimeField(null=True)
 
@@ -74,9 +77,12 @@ class Course(models.Model):
 
 class College(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
-    image_url = models.TextField()
+    logo = models.ImageField(upload_to='logos')
+    image = models.ImageField(upload_to='images')
     college_name = models.CharField(max_length=200)
-    college_pincode = models.ForeignKey(Location,to_field="pincode", on_delete=models.CASCADE)
+    college_pincode = models.ForeignKey(
+        Location, to_field="pincode", on_delete=models.CASCADE
+    )
     college_details = models.TextField()
     college_courses = models.ManyToManyField(Course, related_name="courses")
     is_approved = models.BooleanField(default=False)

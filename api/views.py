@@ -143,7 +143,7 @@ class CollegeRegView(APIView):
 
     @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
     def post(self, request):
-
+        
         try:
             with transaction.atomic():
                 custom_user_data = {
@@ -154,11 +154,12 @@ class CollegeRegView(APIView):
                 serializer_one.is_valid(raise_exception=True)
 
                 college_data = {
-                    "image_url": request.data.get("image_url"),
+                    "logo": request.data.get("logo"),
+                    "image": request.data.get("image"),
                     "college_name": request.data.get("college_name"),
                     "college_pincode": request.data.get("college_pincode"),
                     "college_details": request.data.get("college_details"),
-                    "college_courses": request.data.get("college_courses"),
+                    "college_courses": list(request.data.get("college_courses")),
                 }
                 serializer_two = CollegeRegSerializer(data=college_data)
                 serializer_two.is_valid(raise_exception=True)

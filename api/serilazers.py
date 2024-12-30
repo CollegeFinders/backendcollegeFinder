@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 import jwt
 from django.contrib.auth.hashers import check_password
+from cloudinary.models import CloudinaryField
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -32,7 +33,8 @@ class CollegeRegSerializer(serializers.ModelSerializer):
     class Meta:
         model = College
         fields = [
-            "image_url",
+            "logo",
+            "image",
             "college_name",
             "college_pincode",
             "college_courses",
@@ -167,9 +169,12 @@ class CollegeProfileSerializer(serializers.ModelSerializer):
 class CustomUserAndCollegeSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField()
+    logo = serializers.ImageField()
+    image = serializers.ImageField()
     college_name = serializers.CharField()
-    courses = serializers.ListSerializer(child=serializers.IntegerField())
-    location = serializers.IntegerField()
+    college_details = serializers.CharField()
+    college_courses = serializers.ListSerializer(child=serializers.IntegerField())
+    college_pincode = serializers.IntegerField()
 
 
 class CustomUserAndStudentSerializer(serializers.Serializer):
