@@ -159,7 +159,7 @@ class CollegeRegView(APIView):
                     "college_name": request.data.get("college_name"),
                     "college_pincode": request.data.get("college_pincode"),
                     "college_details": request.data.get("college_details"),
-                    "college_courses": list(request.data.get("college_courses")),
+                    "college_courses": request.data.get("college_courses"),
                 }
                 serializer_two = CollegeRegSerializer(data=college_data)
                 serializer_two.is_valid(raise_exception=True)
