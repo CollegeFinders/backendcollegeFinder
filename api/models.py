@@ -77,8 +77,8 @@ class Course(models.Model):
 
 class College(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
-    logo = models.ImageField(upload_to='logos')
-    image = models.ImageField(upload_to='images')
+    logo = CloudinaryField('logos')
+    image = CloudinaryField('images')
     college_name = models.CharField(max_length=200)
     college_pincode = models.ForeignKey(
         Location, to_field="pincode", on_delete=models.CASCADE
@@ -92,6 +92,7 @@ class College(models.Model):
 
     def __str__(self):
         return self.college_name
+    
 
 
 class AppliedStudents(models.Model):
