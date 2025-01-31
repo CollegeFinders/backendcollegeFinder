@@ -24,6 +24,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 import threading
 
+# from rest_framework.parsers import MultiPartParser, FormParser
+
 
 class StudentRegView(APIView):
 
@@ -186,7 +188,6 @@ class VerifyOtpView(APIView):
 #             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class CollegeRegView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
     def post(self, request):
