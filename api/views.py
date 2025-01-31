@@ -15,6 +15,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from rest_framework.parsers import MultiPartParser, FormParser
+
 
 # from .tasks import send_otp
 from django.db import transaction
@@ -139,33 +141,91 @@ class VerifyOtpView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# class CollegeRegView(APIView):
+#     parser_classes = [MultiPartParser, FormParser]
+
+#     @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
+#     def post(self, request):
+#         print("Incoming Data (Raw):", request.data)
+#         try:
+#             with transaction.atomic():
+#                 custom_user_data = {
+#                     "email": request.data.get("email"),
+#                     "password": request.data.get("password"),
+#                 }
+#                 print("Custom User Data:", custom_user_data)
+#                 serializer_one = CustomUserSerializer(data=custom_user_data)
+#                 serializer_one.is_valid(raise_exception=True)
+
+#                 college_data = {
+#                     "logo": request.data.get("collegeLogo"),
+#                     "image": request.data.get("collegeImageCover"),
+#                     "college_name": request.data.get("collegeName"),
+#                     "college_pincode": request.data.get("postalCode"),
+#                     "college_details": request.data.get("collegeDetails"),
+#                     "college_courses": request.data.get("courseTags"),
+#                 }
+#                 print("College Data:", college_data)
+#                 serializer_two = CollegeRegSerializer(data=college_data)
+#                 serializer_two.is_valid(raise_exception=True)
+
+#                 user = serializer_one.save()
+
+#                 college = serializer_two.save()
+#                 college.user = user
+#                 college.save()
+
+#                 return Response(
+#                     {
+#                         "detail": "College registered successfully. Wait for approval from admin"
+#                     },
+#                     status=status.HTTP_201_CREATED,
+#                 )
+#         except Exception as e:
+#             print("Error:", e)
+#             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 class CollegeRegView(APIView):
+    parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
     def post(self, request):
-
+        print("Incoming Data (Raw):", request.data)
         try:
             with transaction.atomic():
                 custom_user_data = {
                     "email": request.data.get("email"),
                     "password": request.data.get("password"),
                 }
+                print("Custom User Data:", custom_user_data)
                 serializer_one = CustomUserSerializer(data=custom_user_data)
                 serializer_one.is_valid(raise_exception=True)
+
+                # Handling courseTags
+                course_tags_raw = request.data.getlist('courseTags[]')
+                if course_tags_raw:
+                    course_tags = list(map(int, course_tags_raw[0].split(',')))  # Convert to list of integers
+                else:
+                    course_tags = []
+
+                # Handling collegeDetails
+                college_details = request.data.get("collegeDetails")
+                if not college_details:
+                    college_details = "Default Value or Null"  # Adjust based on your model's needs
 
                 college_data = {
                     "logo": request.data.get("collegeLogo"),
                     "image": request.data.get("collegeImageCover"),
                     "college_name": request.data.get("collegeName"),
                     "college_pincode": request.data.get("postalCode"),
-                    "college_details": request.data.get("collegeDetails"),
-                    "college_courses": request.data.get("courseTags"),
+                    "college_details": college_details,
+                    "college_courses": course_tags,  # Array of integers
                 }
+                print("College Data:", college_data)
                 serializer_two = CollegeRegSerializer(data=college_data)
                 serializer_two.is_valid(raise_exception=True)
 
                 user = serializer_one.save()
-
                 college = serializer_two.save()
                 college.user = user
                 college.save()
@@ -176,12 +236,9 @@ class CollegeRegView(APIView):
                     },
                     status=status.HTTP_201_CREATED,
                 )
-
         except Exception as e:
-            return Response(
-                {"detail": f"somthing went wrong,{e}"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            print("Error:", e)
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AdminRegView(APIView):

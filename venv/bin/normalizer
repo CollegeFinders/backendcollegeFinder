@@ -1,4 +1,6 @@
-#!/Users/sreesanthmr/Desktop/course-finder-copy/backendcollegeFinder/venv/bin/python3.12
+#!/bin/sh
+'''exec' "/Users/johinthampi/luminar EKM/Luminar Hub Project/collegeFind/backendcollegeFinder/venv/bin/python3.11" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

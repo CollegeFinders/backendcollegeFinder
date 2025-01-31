@@ -5,7 +5,7 @@ Admin:
 - register
 - login
 - add locations and courses
-- see complete list of locations and colleges
+- see complete list of locations and course
 - see complete list of colleges and students
 - see details of a specific student or college
 - see the colleges that are not approved by the admin

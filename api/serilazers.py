@@ -25,10 +25,15 @@ class StudentDetailsSerializer(serializers.ModelSerializer):
         fields = ["id", "student_name", "gender", "location"]
 
 
+# class CollegeRegSerializer(serializers.ModelSerializer):
+#     college_courses = serializers.PrimaryKeyRelatedField(
+#         queryset=Course.objects.all(), many=True
+#     )
 class CollegeRegSerializer(serializers.ModelSerializer):
-    college_courses = serializers.PrimaryKeyRelatedField(
-        queryset=Course.objects.all(), many=True
-    )
+    logo = serializers.ImageField()
+    image = serializers.ImageField()
+
+
 
     class Meta:
         model = College
@@ -40,6 +45,7 @@ class CollegeRegSerializer(serializers.ModelSerializer):
             "college_courses",
             "college_details",
         ]
+
 
 
 class AdminRegSerializer(serializers.Serializer):
