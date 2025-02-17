@@ -75,23 +75,44 @@ class Course(models.Model):
         return self.course_name
 
 
+# class College(models.Model):
+#     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+#     logo = CloudinaryField('logos',null=True, blank=True)
+#     image = CloudinaryField('images',null=True, blank=True)
+#     college_name = models.CharField(max_length=200,null=True, blank=True)
+#     college_pincode = models.ForeignKey(
+#         Location, to_field="pincode", on_delete=models.CASCADE,null=True, blank=True
+#     )
+#     college_details = models.TextField(null=True, blank=True)
+#     college_courses = models.ManyToManyField(Course, related_name="courses",null=True, blank=True)
+#     is_approved = models.BooleanField(default=False)
+#     approval_request_sent = models.BooleanField(default=True)
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return self.college_name
+
+
 class College(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
-    logo = CloudinaryField('logos')
-    image = CloudinaryField('images')
-    college_name = models.CharField(max_length=200)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    logo = models.FileField(upload_to="logo",null=True)
+    image = models.FileField(upload_to="images_college",null=True)
+    college_name = models.CharField(max_length=200, null=True, blank=True)
     college_pincode = models.ForeignKey(
-        Location, to_field="pincode", on_delete=models.CASCADE
+        Location, to_field="pincode", on_delete=models.CASCADE, null=True, blank=True
     )
-    college_details = models.TextField()
-    college_courses = models.ManyToManyField(Course, related_name="courses")
+    college_details = models.TextField(null=True, blank=True)
+    college_courses = models.ManyToManyField(Course, null=True, blank=True)
+
     is_approved = models.BooleanField(default=False)
     approval_request_sent = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.college_name
+        return self.college_name if self.college_name else "Unnamed College"
+
     
 
 

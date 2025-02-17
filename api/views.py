@@ -37,6 +37,8 @@ class StudentRegView(APIView):
                 custom_user_data = {
                     "email": request.data.get("email"),
                     "password": request.data.get("password"),
+                    "is_active":True,
+                    "is_college":False
                 }
 
                 serializer_one = CustomUserSerializer(data=custom_user_data)
@@ -189,7 +191,7 @@ class VerifyOtpView(APIView):
 
 class CollegeRegView(APIView):
 
-    @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
+    # @swagger_auto_schema(request_body=CustomUserAndCollegeSerializer)
     def post(self, request):
         print("Incoming Data (Raw):", request.data)
         try:
@@ -197,9 +199,12 @@ class CollegeRegView(APIView):
                 custom_user_data = {
                     "email": request.data.get("email"),
                     "password": request.data.get("password"),
+                    "is_college":True,
+                    "is_active":True
                 }
                 print("Custom User Data:", custom_user_data)
                 serializer_one = CustomUserSerializer(data=custom_user_data)
+                print("serializer",serializer_one)
                 serializer_one.is_valid(raise_exception=True)
 
                 # Handling courseTags
@@ -221,6 +226,7 @@ class CollegeRegView(APIView):
                     "college_pincode": request.data.get("postalCode"),
                     "college_details": college_details,
                     "college_courses": course_tags,  # Array of integers
+                    
                 }
                 print("College Data:", college_data)
                 serializer_two = CollegeRegSerializer(data=college_data)
@@ -316,24 +322,34 @@ class LoginView(APIView):
             if serializer.is_valid():
                 user = serializer.validated_data["user"]
 
+                # Generate the refresh and access tokens
                 refresh = RefreshToken.for_user(user)
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh)
 
+                # Determine the role and collect ids
                 if user.is_student:
                     role = "student"
-
+                    student_id = user.student.id if user.student else None  # Assuming user has a related student model
+                    college_id = None  # Students don't have a college id directly in this case
                 elif user.is_college:
                     role = "college"
-
+                    student_id = None  # Colleges don't have a student id
+                    college_id = user.college.id if user.college else None  # Assuming user has a related college model
                 elif not user.is_college and not user.is_student and user.is_admin:
                     role = "admin"
+                    student_id = None  # Admins don't have a student id
+                    college_id = None  # Admins don't have a college id
 
+                # Return the response with the access token, refresh token, role, ids
                 return Response(
                     {
                         "accessToken": access_token,
                         "refreshToken": refresh_token,
                         "role": role,
+                        "id": user.id,  # Include user id in the response
+                        "studentId": student_id,  # Include student id if applicable
+                        "collegeId": college_id,  # Include college id if applicable
                     },
                     status=status.HTTP_200_OK,
                 )
@@ -348,7 +364,6 @@ class LoginView(APIView):
 
 class LocationRegView(APIView):
     permission_classes = [IsAdminUser]
-
     @swagger_auto_schema(
         request_body=LocationRegSerializer,
     )
@@ -394,16 +409,79 @@ class CourseRegView(APIView):
             )
 
 
+# class AdminCollegeApprovalView(APIView):
+#     permission_classes = [IsAdminUser]
+
+#     def get(self, request):
+#         try:
+#             colleges = College.objects.filter(
+#                 is_approved=False, approval_request_sent=True
+#             )
+#             serializer = CollegeDetailsSerializer(colleges, many=True)
+
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         except Exception as e:
+#             return Response(
+#                 {"detail": f"An error occurred: {str(e)}"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
+#     @swagger_auto_schema(
+#         request_body=openapi.Schema(
+#             type=openapi.TYPE_OBJECT,
+#             properties={
+#                 "college_id": openapi.Schema(type=openapi.TYPE_INTEGER),
+#                 "action": openapi.Schema(type=openapi.TYPE_STRING),
+#             },
+#         )
+#     )
+#     def post(self, request):
+#         college_id = request.data.get("college_id")
+#         action = request.data.get("action")
+
+#         if not college_id or action not in ["approve", "reject"]:
+#             return Response(
+#                 {"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST
+#             )
+
+#         try:
+#             college = College.objects.get(id=college_id)
+#             user = college.user
+
+#             if action == "approve":
+#                 college.is_approved = True
+#                 college.approval_request_sent = False
+#                 user.is_active = True
+#                 user.is_college = True
+#                 college.save()
+#                 user.save()
+#                 return Response(
+#                     {"detail": "College approved successfully."},
+#                     status=status.HTTP_200_OK,
+#                 )
+
+#             elif action == "reject":
+#                 college.approval_request_sent = False
+#                 college.save()
+#                 return Response(
+#                     {"detail": "College registration rejected."},
+#                     status=status.HTTP_200_OK,
+#                 )
+
+#         except College.DoesNotExist:
+#             return Response(
+#                 {"detail": "College not found."}, status=status.HTTP_404_NOT_FOUND
+
+#             )
+        
+
 class AdminCollegeApprovalView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
         try:
-            colleges = College.objects.filter(
-                is_approved=False, approval_request_sent=True
-            )
+            colleges = College.objects.filter(approval_request_sent=True)
             serializer = CollegeDetailsSerializer(colleges, many=True)
-
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(
@@ -424,7 +502,7 @@ class AdminCollegeApprovalView(APIView):
         college_id = request.data.get("college_id")
         action = request.data.get("action")
 
-        if not college_id or action not in ["approve", "reject"]:
+        if not college_id or action not in ["approve", "disapprove"]:
             return Response(
                 {"detail": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST
             )
@@ -445,11 +523,11 @@ class AdminCollegeApprovalView(APIView):
                     status=status.HTTP_200_OK,
                 )
 
-            elif action == "reject":
-                college.approval_request_sent = False
+            elif action == "disapprove":
+                college.is_approved = False
                 college.save()
                 return Response(
-                    {"detail": "College registration rejected."},
+                    {"detail": "College disapproved."},
                     status=status.HTTP_200_OK,
                 )
 
@@ -464,10 +542,11 @@ class CollegeListView(APIView):
         try:
             colleges = College.objects.all()
             serializer = CollegeDetailsSerializer(colleges, many=True)
+            
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except:
+        except Exception as e:
             return Response(
-                {"detail": "not result found"}, status=status.HTTP_404_NOT_FOUND
+                {"detail": f"not result found {e}" }, status=status.HTTP_404_NOT_FOUND
             )
 
 
@@ -522,66 +601,86 @@ class LocationBasedCollegeListView(APIView):
             )
 
 
+# class StudentProfileUpdateView(APIView):
+#     permission_classes = [IsStudentUser]
+
+#     @swagger_auto_schema(request_body=StudentProfileSerializer)
+#     def put(self, request):
+
+#         data = request.data
+#         user = request.data.get("user")
+#         student = Student.objects.get(user=user)
+#         serializer = StudentProfileSerializer(student, data=data, partial=True)
+
+#         try:
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 return Response(
+#                     {
+#                         "detail": "Student updated successfully",
+#                         "profile": serializer.data,
+#                     },
+#                     status=status.HTTP_200_OK,
+#                 )
+
+#             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#         except Exception as e:
+#             return Response(
+#                 {"detail": f"An error occurred: {str(e)}"},
+#                 status=status.HTTP_400_BAD_REQUEST,
+#             )
+
 class StudentProfileUpdateView(APIView):
     permission_classes = [IsStudentUser]
 
     @swagger_auto_schema(request_body=StudentProfileSerializer)
     def put(self, request):
-
-        data = request.data
-        user = request.data.get("user")
-        student = Student.objects.get(user=user)
-        serializer = StudentProfileSerializer(student, data=data, partial=True)
-
         try:
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {
-                        "detail": "Student updated successfully",
-                        "profile": serializer.data,
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        except Exception as e:
+            student = Student.objects.get(user=request.user)  # Fetch student by authenticated user
+        except Student.DoesNotExist:
             return Response(
-                {"detail": f"An error occurred: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "Student profile not found."}, 
+                status=status.HTTP_404_NOT_FOUND
             )
+
+        serializer = StudentProfileSerializer(student, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()  # No need to pass user explicitly
+            return Response(
+                {
+                    "detail": "Student updated successfully",
+                    "profile": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CollegeProfileUpdateView(APIView):
-    permission_classes = [IsCollegeUser]
+    permission_classes = [IsCollegeUser]  # Ensure this permission allows the college user to update the profile
 
     @swagger_auto_schema(request_body=CollegeProfileSerializer)
     def put(self, request):
-
-        data = request.data
-        user = request.data.get("user")
-        college = College.objects.get(user=user)
-        serializer = CollegeProfileSerializer(college, data=data, partial=True)
-
+        user = request.user  # Use request.user to get the authenticated user
         try:
-            if serializer.is_valid():
-                serializer.save()
-                return Response(
-                    {
-                        "detail": "College updated successfully",
-                        "profile": serializer.data,
-                    },
-                    status=status.HTTP_200_OK,
-                )
+            college = College.objects.get(user=user)  # Assuming the College model has a relation to the User model
+        except College.DoesNotExist:
+            return Response({"detail": "College not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # The incoming data should be handled with the serializer
+        serializer = CollegeProfileSerializer(college, data=request.data, partial=True)
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
+        if serializer.is_valid():
+            serializer.save()  # Save the updated data
             return Response(
-                {"detail": f"An error occurred: {str(e)}"},
-                status=status.HTTP_400_BAD_REQUEST,
+                {"detail": "College updated successfully", "profile": serializer.data},
+                status=status.HTTP_200_OK,
             )
-
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CollegeDetailsView(APIView):
     def get(self, request, college_id):
@@ -705,7 +804,7 @@ class StudentListView(APIView):
 
 
 class StudentDetailsView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStudentUser]
 
     def get(self, request, student_id):
         try:

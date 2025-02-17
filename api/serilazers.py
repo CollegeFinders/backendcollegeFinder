@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import *
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate,login
 from rest_framework_simplejwt.tokens import RefreshToken
 import jwt
 from django.contrib.auth.hashers import check_password
@@ -10,7 +10,9 @@ from cloudinary.models import CloudinaryField
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ["email", "password"]
+        fields = ["email", "password","is_active","is_college"]
+
+
 
 
 class StudentRegSerializer(serializers.ModelSerializer):
@@ -22,7 +24,7 @@ class StudentRegSerializer(serializers.ModelSerializer):
 class StudentDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ["id", "student_name", "gender", "location"]
+        fields = ["id", "student_name", "gender", "student_pincode"]
 
 
 # class CollegeRegSerializer(serializers.ModelSerializer):
@@ -94,6 +96,8 @@ class LoginSerializer(serializers.Serializer):
         data["user"] = user
         return data
 
+        
+
         """try:
 
             if user.is_student:
@@ -149,27 +153,31 @@ class OtpVerificationSerializer(serializers.Serializer):
 
 class CollegeDetailsSerializer(serializers.ModelSerializer):
     location = LocationDetailsSerializer(read_only=True)
-    courses = CourseDetailsSerializer(many=True, read_only=True)
+    college_courses = CourseDetailsSerializer(many=True, read_only=True)
 
     class Meta:
         model = College
-        fields = ["id", "college_name", "location", "courses"]
+        fields = '__all__'
+
+
+
+
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
-        fields = ["user", "student_name", "gender", "location"]
+        fields = ["user", "student_name", "gender", "student_pincode"]
 
 
 class CollegeProfileSerializer(serializers.ModelSerializer):
-    courses = serializers.PrimaryKeyRelatedField(
-        queryset=Course.objects.all(), many=True
-    )
+    # courses = serializers.PrimaryKeyRelatedField(
+    #     queryset=Course.objects.all(), many=True  # Linking courses with the Course model
+    # )
 
     class Meta:
         model = College
-        fields = ["user", "college_name", "location", "courses"]
+        fields = ["user","logo","image", "college_name", "college_pincode","college_details", "college_courses"]
 
 
 class CustomUserAndCollegeSerializer(serializers.Serializer):
